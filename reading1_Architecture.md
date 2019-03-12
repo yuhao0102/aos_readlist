@@ -38,5 +38,5 @@ Unix非常简洁，在此基础上发明的Linux更是成为了科研必备的�
 添加实验过程，将Unix与其他操作系统进行对比实验，主要有是否支持大文件，对不同大小的单个文件的读写效率实验；因为涉及shell的部分各个系统的设计不同，所以暂时无法对比，不过可以通过易用性进行简单比较。
 ## Give the survey paper list in the same area.
 Unix Implementation, Bell System Tech J  
-Portability of C Programs and the Unix System, Johnson, S. C.， Ritchie, D. M.
+Portability of C Programs and the Unix System, Johnson, S. C., Ritchie, D. M.  
 The Evolution of the Unix Time-sharing System
