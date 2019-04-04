@@ -42,5 +42,7 @@ Dune使用了英特尔VT-x虚拟化架构，提供了应用程序级的对异常
 - 文中提到Dune支持了一些系统调用，对其余系统调用仍需支持，同时也可对某些系统调用进行封装。
 
 ## If you write this paper, then how would you do?
+本文对Dune的实现基础介绍的非常详细，也介绍了Dune的应用和对应用的测试结果。但是，希望能够增加一些对实现细节的描述，因为在操作系统领域更多的关注底层原理的实现，但这些领域的代码非常抽象，难以阅读。在文中可以引用部分相关代码，并加以解释，使读者更深刻的理解。
+
 ## What’s your test Results about the paper?
-## Give the survey paper list in the same area.
+非常遗憾，使用`git clone https://github.com/project-dune/dune.git`获得了Dune的代码，但是因为机器所限，没有实际运行这些示例，但是阅读了Dune的代码，了解了其内部代码构成。
