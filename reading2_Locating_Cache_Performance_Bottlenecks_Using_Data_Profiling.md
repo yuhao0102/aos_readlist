@@ -34,12 +34,12 @@ VTune：可视化性能分析器（Intel VTune Performance Analyzer）是一个�
 2. 给出了四种展现结果的方式：
 
     Data Profile可以展示数据类型遇到cache miss的比例，针对多核的情况，哪种数据类型在多个核之间不停“转换”，可以针对这种cache miss对算法进行优化，使一个对象能在本地完成整个生命周期。
-    ![](figure/20190421001.jpg)
+    ![](./figure/20190421001.jpg)
 
     Miss Classification：对每个数据类型哪种miss比例最多，可以针对特定的miss进行优化。
 
     Working Set：可以翻译为工作集，表明了哪些数据类型是比较活跃的，这种全局的缓存信息对追踪特定的miss非常重要，不同的数据元素在cache中可能相互驱逐，产生“抖动”。下图也是一个综合了data profile和working set的表格。
-    ![](figure/20190421002.jpg)
+    ![](./figure/20190421002.jpg)
     文中提到利用这个工作集可以发现是否**一次使用了太多的特定类型的数据项**。
 
     Data Flow：展现了使用特定类型的对象的最常见函数序列。
@@ -48,7 +48,7 @@ VTune：可视化性能分析器（Intel VTune Performance Analyzer）是一个�
 
 4. DProf使用从硬件采样的方法将路径追踪（path trace）拼接在一起，有两种原始数据：
     access samples：收集以下信息。它使用了IBS进行收集，这涉及了硬件特性，可以对CPU运行进行详细的采样。
-    ![](figure/20190421003.jpg)
+    ![](./figure/20190421003.jpg)
 
 5. 对数据类型的处理。分为静态和动态两种，静态分配的内存可以在debug信息中找到其基址，对动态分配的内存，修改了分配器，可以对分配的对象进行追踪，并探索将数据类型与动态分配的内存地址进行绑定。
 
