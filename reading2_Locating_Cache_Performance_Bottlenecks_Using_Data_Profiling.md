@@ -24,10 +24,16 @@
 OProfile：是Linux平台上的一个功能强大的性能分析工具，支持两种采样(sampling)方式：基于事件的采样(eventbased)和基于时间的采样(timebased)，它可以工作在不同的体系结构上，包括MIPS、ARM、IA32、IA64和AMD。
 
 MemSpy：定位缓存访问低效的部分代码，可以分析每次缓存未命中。
+论文：“MemProf: A Memory Proﬁler for NUMA Multicore Systems”
+github：https://github.com/Memprof/module
 
 VTune：可视化性能分析器（Intel VTune Performance Analyzer）是一个用于分析和优化程序性能的工具，作为Intel为开发者提供的专门针对寻找软硬件性能瓶颈的一款分析工具，它能确定程序的热点（hotspot），找到导致性能不理想的原因，从而让开发者据此对程序进行优化。
 
 文中还提及了PTU（Performance tuning utility），它只将地址与静态内存关联，但DProf可以将动态内存也纳入考虑。
+
+Intel推出了Pin，它是intel公司开发的用于程序测试的一款工具软件，支持32位、64位的Linux和Windows的可执行程序,可以检测程序运行过程中的命令、内存、地址等的详细信息。它允许工具在可执行文件中的任意位置插入对检测API的调用，也提供丰富的API，可以抽象出底层指令集的特性。通过使用Just-In-Time（JIT）编译器来插入和优化代码，提供了高效的检测。
+
+题目：Pin: Building Customized Program Analysis Tools with Dynamic Instrumentation
 
 ## What are some intriguing aspects of the paper?
 1. 提出了一种新思路，将性能分析同代码的数据类型结合起来，并将DProf收集到的信息进行分析使cache miss得以分类处理。
@@ -42,7 +48,7 @@ VTune：可视化性能分析器（Intel VTune Performance Analyzer）是一个�
     ![](./figure/20190421002.jpg)
     文中提到利用这个工作集可以发现是否**一次使用了太多的特定类型的数据项**。
 
-    Data Flow：展现了使用特定类型的对象的最常见函数序列。
+    Data Flow：展现了使用特定类型的数据结构对象的函数调用序列。
 
 3. 在未命中分类（Miss Classification）中，介绍了检测几种未命中的情况。对Invalidation，DProf使用之前提过的路径追踪来检查是否有写操作；对冲突未命中，当cache使用了N路组相连，当软件频繁访问M(M>N)个不同的行，但是这M个行都映射到一个关联集上时，会发生miss，在平常的工作中很少会考虑这种性能损失，不过这是非常重要的优化途径。
 
