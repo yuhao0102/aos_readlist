@@ -35,6 +35,8 @@ Intel推出了Pin，它是intel公司开发的用于程序测试的一款工具�
 
 题目：Pin: Building Customized Program Analysis Tools with Dynamic Instrumentation
 
+Valgrind: A program supervision framework. In Proceedings of the 3rd Workshop on Runtime Verification.
+
 ## What are some intriguing aspects of the paper?
 1. 提出了一种新思路，将性能分析同代码的数据类型结合起来，并将DProf收集到的信息进行分析使cache miss得以分类处理。
 2. 给出了四种展现结果的方式：
