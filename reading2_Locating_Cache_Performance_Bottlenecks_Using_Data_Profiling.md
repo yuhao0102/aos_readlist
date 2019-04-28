@@ -33,38 +33,42 @@ VTune：可视化性能分析器（Intel VTune Performance Analyzer）是一个�
 
 Intel推出了Pin，它是intel公司开发的用于程序测试的一款工具软件，支持32位、64位的Linux和Windows的可执行程序,可以检测程序运行过程中的命令、内存、地址等的详细信息。它允许工具在可执行文件中的任意位置插入对检测API的调用，也提供丰富的API，可以抽象出底层指令集的特性。通过使用Just-In-Time（JIT）编译器来插入和优化代码，提供了高效的检测。
 
-题目：Pin: Building Customized Program Analysis Tools with Dynamic Instrumentation
+论文题目：Pin: Building Customized Program Analysis Tools with Dynamic Instrumentation
 
-Valgrind: A program supervision framework. In Proceedings of the 3rd Workshop on Runtime Verification.
+在Pin的论文中提到的另一种检测工具：Valgrind: A program supervision framework. In Proceedings of the 3rd Workshop on Runtime Verification.
 
 ## What are some intriguing aspects of the paper?
 1. 提出了一种新思路，将性能分析同代码的数据类型结合起来，并将DProf收集到的信息进行分析使cache miss得以分类处理。
-2. 给出了四种展现结果的方式：
+2. 给出了四种直观展现结果的方式：
 
     Data Profile可以展示数据类型遇到cache miss的比例，针对多核的情况，哪种数据类型在多个核之间不停“转换”，可以针对这种cache miss对算法进行优化，使一个对象能在本地完成整个生命周期。
-    ![](./figure/20190421001.jpg)
+    ![图1 DProf生成的memcached的data Profile分析表格](./figure/20190421001.jpg)
 
     Miss Classification：对每个数据类型哪种miss比例最多，可以针对特定的miss进行优化。
 
     Working Set：可以翻译为工作集，表明了哪些数据类型是比较活跃的，这种全局的缓存信息对追踪特定的miss非常重要，不同的数据元素在cache中可能相互驱逐，产生“抖动”。下图也是一个综合了data profile和working set的表格。
-    ![](./figure/20190421002.jpg)
+    ![图2 使用DProf对Apache进行分析的结果](./figure/20190421002.jpg)
     文中提到利用这个工作集可以发现是否**一次使用了太多的特定类型的数据项**。
 
     Data Flow：展现了使用特定类型的数据结构对象的函数调用序列。
 
 3. 在未命中分类（Miss Classification）中，介绍了检测几种未命中的情况。对Invalidation，DProf使用之前提过的路径追踪来检查是否有写操作；对冲突未命中，当cache使用了N路组相连，当软件频繁访问M(M>N)个不同的行，但是这M个行都映射到一个关联集上时，会发生miss，在平常的工作中很少会考虑这种性能损失，不过这是非常重要的优化途径。
 
-4. DProf使用从硬件采样的方法将路径追踪（path trace）拼接在一起，有两种原始数据：
+4. DProf使用从**硬件采样**的方法将路径追踪（path trace）拼接在一起，有两种原始数据：
     access samples：收集以下信息。它使用了IBS进行收集，这涉及了硬件特性，可以对指令添加tag，当执行这个指令时，将对其进行跟踪，对CPU运行进行详细的采样。实现了一个解析器，，解析器查找该地址所属的对象类型以及该对象的基址。文中对内存地址的解析分为静态和动态两种，静态分配的内存可以在debug信息中找到其基址，对动态分配的内存，修改了分配器，可以对分配的对象进行追踪，并探索将数据类型与动态分配的内存地址进行绑定。
-    ![](./figure/20190421003.jpg)
+    ![object access history分析结果样例](./figure/20190421003.jpg)
+
     object access histories：DProf使用了**debug寄存器**监听数据对象并将访问历史记录下来。并且DProf自动选择监听的对象，一般是在访问采样中最经常出现的对象。等待内核的内存分配器对其分配内存后，DProf使用debug寄存器进行追踪，直至这个对象被free。
 
 5. 文中使用了两个不同的程序进行测试，并使用DProf搜索两个程序的缓存不命中的地方，分析了DProf的开销，测试覆盖全面。
 
 ## How to test/compare/analyze the results?
-本文中，对DProf进行了测试分析，将其与另一种性能分析工具进行对比，并在Linux中实际分析了两种应用，查找其缓存性能问题。
+本文中，对DProf进行了测试分析，将其与另一种性能分析工具OProfile进行对比，并在Linux中实际分析了两种web应用，这两种应用是需要频繁分配和释放内存的可能会出现缓存性能瓶颈，使用DProf和Oprofile查找这两种应用的缓存性能问题。同时分析DProf自身的开销。通过测试，发现有时一些平衡负载的策略可能会提高cache miss的概率。
+
+DProf使用了AMD处理器提供的硬件特性，在其官网上提示“此代码需要支持IBS的AMD处理器”。
 
 ## If you write this paper, then how would you do?
+
 本文对cache miss的分类、DProf的原理、运行过程及其测试进行了详细的说明，但是如果能在实现细节上进行分析，或者描述如何针对具体应用使用DProf进行分析并改进应用可能会对学习者更加友好。
 
 ## Give the survey paper list in the same area.
