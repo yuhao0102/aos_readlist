@@ -140,7 +140,7 @@ ide_init函数，完成对用于页换入换出的初始化工作。另外涉及
 lab4的线程运行都在内核态，lab5创建了用户进程，让用户进程在用户态执行，且可以调用系统调用。uCore提供了用户态进程的创建和执行机制，在进程管理和内存管理部分需要深入考虑。
 
 1. 本实验中第一个用户进程是由内核线程initproc通过把hello应用程序执行码覆盖到initproc的用户虚拟内存空间来创建的。
-    - ld命令会在kernel中会把__user_hello.out的位置和大小记录在全局变量**`\_binary_obj\_\_\_user_hello_out_start`** 和**`\_binary_obj\_\_\_user\_hello\_out\_size`**中，这样这个hello用户程序就能够和ucore内核一起被 bootloader 加载到内存里中，并且通过这两个全局变量定位hello用户程序执行码的起始位置和大小；
+    - ld命令会在kernel中会把__user_hello.out的位置和大小记录在全局变量**`_binary_obj___user_hello_out_start`** 和**`_binary_obj___user_hello_out_size`**中，这样这个hello用户程序就能够和ucore内核一起被 bootloader 加载到内存里中，并且通过这两个全局变量定位hello用户程序执行码的起始位置和大小；
     - initproc实际上是执行了`init_main`函数，它执行宏`KERNEL_EXECVE`，最终调用`kernel_execve`来调用`SYS_exec`系统调用，kernel_execve把上述两个变量作为`SYS_exec`系统调用的参数，让ucore来创建此用户进程。当ucore收到此系统调用后，最终调用`do_execve`函数；
     - `do_execve`清空用户态内存空间，释放进程所占用户空间内存和进程页表本身所占空间，调用`load_icode`完成加载执行码到当前进程的用户态虚拟空间中的工作；
 
