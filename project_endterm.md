@@ -17,8 +17,15 @@ uCore共分为8个实验，主要实现了对物理内存、虚拟内存的管�
 lab1主要是对环境的熟悉、基础代码的熟悉和对堆栈、中断等进行处理的基本操作。
 
 1. 在lab1中，搭建了基于Linux和qemu的运行环境，并对Makefile进行了初步分析，可以使用gdb完成调试。
+2. 了解了线性地址、物理地址、逻辑地址之间的关系。
+    - 逻辑地址空间就是应用程序员编程所用到的地址空间。
+    - 物理地址是指CPU提交到内存总线上用于访问计算机内存和外设的最终地址，CPU通过物理地址访问物理地址空间。
+    - 线性地址又称虚拟地址，是进行逻辑地址转换后形成的地址索引，用于寻址线性地址空间。
+    - 逻辑地址（由段选择子selector和段偏移offset组成）中的段选择子的内容作为段描述符表的索引，找到表中对应的段描述符，然后把段描述符中保存的段基址加上段偏移值，形成线性地址（Linear Address）。
+    - 分页地址转换，这一步中把线性地址转换为物理地址。
+    - 逻辑地址即是程序指令中使用的地址，物理地址是实际访问内存的地址。逻辑地址通过段式管理的地址映射可以得到线性地址，线性地址通过页式管理的地址映射得到物理地址。
 
-2. 分析了bootloader从实模式进入保护模式的过程。bootloader被BIOS加载到内存的0x7c00处，同时实现了开启A20的过程：
+3. 分析了bootloader从实模式进入保护模式的过程。bootloader被BIOS加载到内存的0x7c00处，同时实现了开启A20的过程：
     - 从0x64地址中中读取8042的状态，直到检测到读取到的字节第二位为0，即端口不忙；
     - 向0x64写入0xd1命令，修改8042的P2端口；
     - 继续等不忙，向0x60端口写入0xDF，表示将P2 port的第二个位（A20）置为1，开启A20；
@@ -29,19 +36,19 @@ lab1主要是对环境的熟悉、基础代码的熟悉和对堆栈、中断等�
 
     > 如果A20 Gate被禁止，则当程序员给出100000H-10FFEFH之间的地址的时候，系统仍然使用8086/8088的方式即取模方式（8086仿真）。绝大多数IBM PC兼容机默认的A20 Gate是被禁止的。现在许多新型PC上存在直接通过BIOS功能调用来控制A20 Gate的功能。
 
-3. 加载ELF格式的过程比较简单，这里使用了一些函数，，涉及读取磁盘扇区的操作，如outb函数其实是封装了out汇编指令，下述的流程主要是向控制器的特定端口发送相关指令，实现数据读取。主要有：
+4. 加载ELF格式的过程比较简单，这里使用了一些函数，，涉及读取磁盘扇区的操作，如outb函数其实是封装了out汇编指令，下述的流程主要是向控制器的特定端口发送相关指令，实现数据读取。主要有：
     - 设置读取的扇区数量，写入0x1f2端口；
     - 设置起始LBA（logical block address）扇区号；
     - 向端口 0x1f7 写入 0x20请求硬盘读；
     - 等待读写操作完成，即等待 0x1f7 端口第3位置1；
     - 连续取出数据。
 
-4. 实现函数调用堆栈跟踪函数
+5. 实现函数调用堆栈跟踪函数
     - 使用read_ebp和read_eip函数获取当前stack frame的base pointer以及这条指令下一条指令的地址
     - 打印出当前栈帧对应的函数的参数
     - 查找当前函数的调用者的栈帧。调用者的栈帧的bp存放在被调用者的ebp指向的内存单元，将其更新到ebp临时变量中，同时将eip更新为调用当前函数的指令的下一条指令所在位置，存放在ebp+4所在的内存单元中；
 
-5. 建立中断向量表，这个函数主要依靠了gatedesc结构体和SETGATE宏。
+6. 建立中断向量表，这个函数主要依靠了gatedesc结构体和SETGATE宏。
     - 中断描述符表（IDT）把每个中断或异常编号和一个指向中断服务例程的描述符联系起来，对IDT中的每一项，调用SETGATE进行设置。
     - \_\_vectors[i]是在代码段中的偏移量，vectors[i]在kern/trap/vectors.S中定义，定义了255个中断服务例程的地址，这里才是入口，且都跳转到__alltraps。
     - \_\_alltraps调用了trap函数，在trap中调用了trap_dispatch，这样就根据传进来的中断号进行switch处理。
@@ -80,6 +87,11 @@ lab2主要是对物理内存的发现和初步管理。
     - 本练习补充了get_pte函数。给定page directory以及线性地址，查询出该线性地址（la）对应的PTE（page table entry），并且根据输入参数要求判断是否创建不存在的页表。
     - 用到了`KADDR(pa)`宏，主要是通过物理地址（pa）得到虚拟地址。
     - 主要过程是获取对应的pgdir，请求一个物理页存储新创建的页表，初始化并返回线性地址对应的页目录项。
+
+7. 练习3实现了释放某虚地址所在的页。
+    - 本练习比较简单，主要是使用`pte2page(*ptep)`获取页表项对应的物理页的Page结构，并对已经没有引用映射的物理页调用`free_page`进行释放，设置`PTE_P`存在位为0表示该映射关系无效。
+    - 最后调用了`tlb_invalidate`函数，它的作用是“刷新TLB，确保TLB的缓存中不会有错误的映射关系”，在做实验的时候忽略了这一点。
+
 
 ### lab3
 lab3主要是实现了Page Fault异常处理和FIFO页替换算法。涉及了do_pgfault函数，它会申请一个空闲物理页，并建立好虚实映射关系；
@@ -145,7 +157,7 @@ ide_init函数，完成对用于页换入换出的初始化工作。另外涉及
 lab4的线程运行都在内核态，lab5创建了用户进程，让用户进程在用户态执行，且可以调用系统调用。uCore提供了用户态进程的创建和执行机制，在进程管理和内存管理部分需要深入考虑。
 
 1. 本实验中第一个用户进程是由内核线程initproc通过把hello应用程序执行码覆盖到initproc的用户虚拟内存空间来创建的。
-    - ld命令会在kernel中会把__user_hello.out的位置和大小记录在全局变量**`_binary_obj___user_hello_out_start`** 和**`_binary_obj___user_hello_out_size`**中，这样这个hello用户程序就能够和ucore内核一起被 bootloader 加载到内存里中，并且通过这两个全局变量定位hello用户程序执行码的起始位置和大小；
+    - ld命令会在kernel中会把__user_xxxx.out的位置和大小记录在全局变量**`_binary_obj___user_xxxx_out_start`** 和**`_binary_obj___user_xxxx_out_size`**中，这样这个用户程序就能够和ucore内核一起被 bootloader 加载到内存里中，并且通过这两个全局变量定位用户程序执行码的起始位置和大小；
     - initproc实际上是执行了`init_main`函数，它执行宏`KERNEL_EXECVE`，最终调用`kernel_execve`来调用`SYS_exec`系统调用，kernel_execve把上述两个变量作为`SYS_exec`系统调用的参数，让ucore来创建此用户进程。当ucore收到此系统调用后，最终调用`do_execve`函数；
     - `do_execve`清空用户态内存空间，释放进程所占用户空间内存和进程页表本身所占空间，调用`load_icode`完成加载执行码到当前进程的用户态虚拟空间中的工作；
 
@@ -174,7 +186,136 @@ lab4的线程运行都在内核态，lab5创建了用户进程，让用户进程
         - 将前者的内容拷贝到后者中去（memcpy）；
         - 为子进程当前分配这一物理页映射上在子进程虚拟地址空间里的一个虚拟页；
 
-## 实验收获
-uCore实验实现了从简单到复杂的构建一个操作系统的工作。在实验中，会更加深入地了解操作系统底层是如何与硬件配合，完成对中断的管理，对物理内存和虚拟内存的分配、管理和映射，同时，对线程与进程的创建、执行过程有了更进一步的体会。另外，对C与汇编的配合也有了更深的了解，同时掌握了一些语言上的技巧，比如`(type *)(0)`，最重要的是了解了之前学到的知识是如何在操作系统内实现的。
+4. 在执行了某个系统调用之后，会将控制权转移给syscall，之后根据系统调用号执行特定函数，进一步执行上文中的do_execve、do_fork等函数。调用顺序如下，其中T_SYSCALL=0x80=128：`vector128(vectors.S) --> 
+__alltraps(trapentry.S) --> trap(trap.c) --> trap_dispatch(trap.c) --> syscall(syscall.c)`
 
-这也加深了我对OS底层的认识，相信对之后的工作也大有裨益。
+### lab6
+本实验在ucore的调度器框架的基础上了解了Round-Robin，实现了Stride Scheduling调度算法。
+
+1. 进程的生命周期如下：
+	- 调度器sched_class根据run_queue的内容来判断一个进程是否应该被运行，把处于runnable态的进程转换成running状态；
+	- running态的进程通过wait等系统调用被阻塞，进入sleeping态；
+	- sleeping态的进程被wakeup变成runnable态的进程；
+	- running态的进程exit变成zombie态后由其父进程完成对其资源的最后释放；
+	- 所有从runnable态变成其他状态的进程都要出运行队列，反之，被放入某个运行队列中。
+
+2. lab6实现了一个调度框架，如果要实现一个调度器，需要完成一些函数，而这些函数在框架中又被封装成一下的函数：
+	- sched_init函数，用于调度算法的初始化，主要是初始化run_queue，设置调度器；
+	- sched_class_enqueue函数：将指定的进程的状态置成RUNNABLE，并且放入调用算法中的可执行队列中；
+	- sched_class_dequeue函数：将某个在队列中的进程取出，即调度算法选择的进程需要等待的可执行的进程队列中取出并执行；
+	- sched_class_pick_next函数：选择要执行的下个进程；
+	- sched_class_proc_tick函数：每次时钟中断的时候应当调用的调度算法函数，如时间片减一；
+	- trap中调用了trap_dispatch和schedule函数，能够在need_resched时及时调度。
+
+3. RR调度算法，它让所有runnable态的进程分时轮流使用CPU时间，当前进程的时间片用完之后，调度器将当前进程放置到运行队列的尾部，再从其头部取出进程进行调度。
+	- RR_enqueue：某进程的PCB放入到run_queue队列末尾，如果时间片已经0，则重置为max_time_slice；
+	- RR_pick_next：选取就绪进程队列run_queue中的队头元素，并使用le2proc转换成PCB；
+	- RR_dequeue：就绪进程队列run_queue的队列元素删除，并把表示就绪进程个数的proc_num减一；
+	- RR_proc_tick：时钟中断时，当前执行进程的时间片time_slice减一。如果time_slice为零，则设置此进程成员变量need_resched标识为1。
+
+4. Stride Scheduling。本stride调度算法的实现中使用了斜堆来实现优先队列。
+	- init函数初始化当前的运行队列；
+	- enqueue函数把进程加入run_pool，并设置时间片为rq->max_time_slice；
+	- dequeue函数把进程移出run_pool；
+	- 进程的stride表示该进程当前的调度权，也可以表示这个进程执行了多久了。pass表示对应进程在调度后stride需要进行的累加值；
+	- stride_pick_next表示每次需要调度时，从状态为 runnable 态的进程中选择stride最小的进程调度，选出的进程P的stride加上其对应的步长pass；
+	- 在一段固定的时间之后，重新调度当前stride最小的进程。
+	- `P.pass =BigStride / P.priority`，其中`P.priority`表示进程的优先权（大于 1），而 BigStride 表示一个预先定义的大常数，则该调度方案为每个进程分配的时间将与其优先级成正比。
+
+5. 斜堆的相关实现
+
+### lab7
+本实验实现了同步互斥的操作
+
+1. 在ucore中提供的底层机制包括中断屏蔽/使能控制等。`kern/sync.c`有开关中断的控制函数`local_intr_save(x)`和`local_intr_restore(x)`，它们是基于`kern/driver`文件下的`intr_enable()`、`intr_disable()`函数实现的。具体调用关系为：
+	- 关中断：`local_intr_save --> __intr_save --> intr_disable --> cli`
+	- 开中断：`local_intr_restore --> __intr_restore --> intr_enable --> sti`
+	- cli和sti是x86的机器指令，最终实现了关（屏蔽）中断和开（使能）中断，即设置了eflags寄存器中与中断相关的位。
+	- 关闭中断，可以避免执行的程序被中断处理事件打断造成异常
+
+2. 等待项wait结构和等待队列wait queue结构以及相关函数是实现ucore中的信号量机制和条件变量机制的基础，进入wait queue的进程会被设为等待状态（PROC_SLEEPING），直到他们被唤醒，主要有以下几个函数：
+	- wait_init：初始化wait结构
+	- wait_in_queue：检查wait是否在wait queue中
+	- wait_queue_init：初始化wait_queue结构
+	- wait_queue_add：设置当前等待项wait的等待队列，并把wait前插到wait queue中
+	- wait_queue_del：从wait queue中删除wait
+	- wait_queue_next：取得wait_queue中wait等待项的后一个链接指针
+	- wakeup_wait：唤醒等待队列上的wait所关联的进程
+
+3. 信号量是一种同步互斥机制的实现
+	- P操作函数`down(semaphore_t *sem)`
+		- 关中断，信号量的value>0可以获得信号量，打开中断返回即可；
+		- value≤0，则无法获得信号量，进程加入到等待队列中，开中断；
+		- 然后运行调度器选择另外一个进程执行；
+		- 唤醒后把自身关联的wait从wait_queue中删除。
+	- V操作函数`up(semaphore_t *sem)`
+		- 关中断，信号量的wait queue若为空则直接把信号量的value++，开中断返回；
+		- 如果有进程在等待则调用wakeup_wait函数将wait_queue中等待的第一个wait删除，且把此wait关联的进程唤醒，最后开中断返回。
+
+4. 管程和条件变量。管程定义了一个局限在管程内部的数据结构，和一组管程内部的过程，这个数据结构只能被内部的过程所访问，管程之外的过程不能访问它。
+	- ucore中的管程基于信号量和条件变量，它的数据结构中包含：
+		- mutex，控制只有一个进程能够进入管程中执行操作；
+		- cv，管程中的条件变量；
+		- next是用来控制一个进程离开管程之后该唤醒哪个管程，维持进程间相互唤醒；
+		- next_count则表示由于发出singal_cv而睡眠的进程个数。
+	- 条件变量中的数据项包括：
+		- 信号量sem，用于让等待某个条件Cond为真的进程睡眠，让发出signal_cv操作的进程通过这个sem来唤醒睡眠的进程；
+		- count表示等在这个条件变量上的睡眠进程的个数；
+		- owner表示此条件变量的宿主是哪个管程。
+	- A执行了cond_wait函数：
+		- 等待此条件的睡眠进程个数cv.count要加一。
+		- monitor.next_count大于0表示有进程执行cond_signal函数且等待在next上，则唤醒进程B；
+		- monitor.next_count小于等于0，唤醒的等待monitor的进程；
+		- A在cv.sem上等待
+	- A执行了cond_signal函数：
+		- cv.count小于等于0，没有执行cond_wait而睡眠的进程，直接返回；
+		- cv.count大于0，则有执行cond_wait而睡眠的进程，因此需要唤醒并且自己在next上等待，monitor.next_count++；
+
+### lab8
+本实验展示了ucore的文件系统
+1. core的文件系统架构主要由四部分组成：
+	- 通用文件系统访问接口层：文件系统的标准访问接口
+	- 文件系统抽象层：提供一致的访问接口和抽象函数指针列表和数据结构；
+	- Simple FS文件系统层：一个基于索引方式的简单文件系统实例；
+	- 外设接口层：提供抽象访问接口屏蔽不同硬件细节，向下实现访问各种具体设备驱动的接口
+2. SFS文件系统主要有以下几部分：
+	- 超级块，包含了关于文件系统的所有关键参数，如魔数（0x2f8dbe2a）等；
+	- root-dir的inode，用来记录根目录的相关信息；
+	- unused_blocks：类似freemap，表示块是否被占用；
+	- info：所有其他目录和文件的inode信息；
+3. 练习一主要是实现了读取文件数据的函数：
+	- sys_read函数设置了文件指针和读取长度、基地址等信息，调用了sysfile_read函数；
+	- sysfile_read函数中，kmalloc创建了一个缓冲区；
+	- 在sysfile_read中调用了file_read，调用fd2file获取这个文件描述符，查找到了对应inode信息；
+	- 调用vop_read进行读取，通过函数指针转交给sfs_read函数；
+	- 调用sfs_io函数，主要是找到代表这个文件系统的fs和对应inode；
+	- 进一步调用了sfs_io_nolock函数；
+		- 首先根据读或写为函数指针赋值；
+		- 计算要读写的块数、长度、偏移；
+		- 根据开始读的偏移是不是在一个块的起始判断是否要从一个块的中间部分开始读；
+		- 读写中间的完整块；
+		- 读写末尾的块（如果最末尾有不完整的块的话）；
+		- 根据块是否完整调用sfs_buf_op或sfs_block_op；
+
+4. 练习二重写了load_icode函数，调用栈为sys_exec --> do_execve，这个函数主要是为了加载ELF可执行文件。主要是以下几个部分：
+	- 创建内存管理结构mm和页目录表PDT（mm_create和setup_pgdir）；
+	- 将磁盘上的ELF文件的TEXT/DATA/BSS段正确地加载到用户空间中；
+	- 调用load_icode_read-->sysfile_read读取elf文件的header；
+	- 根据elfheader中elf.e_phnum，获取到磁盘上所有的program header；
+	- 对于每一个program header：
+		- 这里同样也是调用load_icode_read读取；
+		- 为段创建vma并设置权限，同时建立物理页和虚拟页的映射关系；
+		- 调用load_icode_read读取段，并且复制到用户内存空间上去；
+		- 设置设置用户栈，首先根据传入参数的个数计算栈顶应该在哪，为栈分配分配物理页；
+		- 把argc参数和argv参数压入栈；
+		- 设置trapframe，其中栈顶位置为之前计算的到的栈顶位置；
+
+5. PIPE机制可以看成是一个缓冲区，可以在磁盘上（或内存中？更快）保留一部分空间作为pipe机制的缓冲区。当两个进程之间要求建立pipe时，在两个进程的进程控制块上修改某些属性表明这个进程是管道数据的发送方还是接受方，这样就可以将stdin或stdout重定向到生成的临时文件里，在两个进程中打开这个临时文件。
+    - 当进程A使用stdout写时，查询PCB中的相关变量，把这些stdout数据输出到临时文件中；
+    - 当进程B使用stdin的时候，查询PCB中的信息，从临时文件中读取数据；
+
+6. UNIX的软硬链接
+	- 硬链接： 与普通文件没什么不同，inode 都指向同一个文件在硬盘中的区块
+	- 软链接： 保存了其代表的文件的绝对路径，是另外一种文件，在硬盘上有独立的区块，访问时替换自身路径。
+	- sfs_disk_inode结构体中有一个nlinks变量，如果要创建一个文件的软链接，这个软链接也要创建inode，只是它的类型是链接，找一个域设置它所指向的文件inode，如果文件是一个链接，就可以通过保存的inode位置进行操作；当删除一个软链接时，直接删掉inode即可；
+	- 硬链接与文件是共享inode的，如果创建一个硬链接，需要将源文件中的被链接的计数加1；当删除一个硬链接的时候，除了需要删掉inode之外，还需要将硬链接指向的文件的被链接计数减1，如果减到了0，则需要将源文件删除掉；
