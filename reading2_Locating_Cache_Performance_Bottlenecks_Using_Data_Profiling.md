@@ -67,6 +67,9 @@ Intel推出了Pin，它是intel公司开发的用于程序测试的一款工具�
 
 DProf使用了AMD处理器提供的硬件特性，在其官网上提示“此代码需要支持IBS的AMD处理器”。
 
+## How can the research be improved?
+本文中的工具基于AMD处理器提供的硬件特性（Instruction-Based Sampling），IBS在单个程序运行中收集各种性能信息，从而更容易进行性能测试。这使得DProf具有平台依赖性，是否可以考虑类似Pin的实现方式，使用插桩的方法获取信息，二者相结合，测试信息更完善。
+
 ## If you write this paper, then how would you do?
 
 本文对cache miss的分类、DProf的原理、运行过程及其测试进行了详细的说明，但是如果能在实现细节上进行分析，或者描述如何针对具体应用使用DProf进行分析并改进应用可能会对学习者更加友好。

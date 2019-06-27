@@ -36,9 +36,17 @@ Unix中最令人感兴趣的地方是其对文件系统的管理。
 ## How can the research be improved?
 Unix非常简洁，在此基础上发明的Linux更是成为了科研必备的开发环境，可以不断测试并提高其在多核机器上的可扩展性，发挥机器的应用潜力。对文件系统的组织探索更好的分配调度算法，充分利用时空局部性。
 
+## What’s your test Results about the paper?
+本文中的Linux系统是比较早期的版本。ucore中的具体实现与Linux类似，通过进行ucore的实验对文件系统、作业调度、页面置换算法等问题有了更深入的了解。
+
 ## If you write this paper, then how would you do?
 从标题来讲，首先，可能会对Unix介绍的更加深入，比如它的页面置换算法；可能更希望看到Unix内是如何管理时间片并对其进行调度的。对进程的管理和调度等。在最后添加一些实验过程，将Unix与其他操作系统进行对比实验，运行速度、运行稳定性和可扩展性等，其他的指标主要有是否支持大文件，对不同大小的单个文件的读写效率实验；因为涉及shell的部分各个系统的设计不同，所以暂时无法对比，不过可以通过易用性进行简单比较。
+
 ## Give the survey paper list in the same area.
 Unix Implementation, Bell System Tech J  
+
 Portability of C Programs and the Unix System, Johnson, S. C., Ritchie, D. M.  
+
 The Evolution of the Unix Time-sharing System
+
+深入理解Linux内核中也有对此的详细讲解

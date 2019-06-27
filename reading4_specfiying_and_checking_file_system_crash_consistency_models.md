@@ -42,11 +42,14 @@ POSIX文件系统并未定义系统崩溃后文件系统的接口行为，本文
 ## How to test/compare/analyze the results?
 搭建本文的测试环境需要安装以下工具：
 
-[ferrite的github地址](https://github.com/uwplse/ferrite)，此外需要安装Racket，也是一门语言，可以在Ubuntu上用aot-get直接安装。
+[ferrite的github地址](https://github.com/uwplse/ferrite)，此外需要安装Racket，也是一门语言，可以在Ubuntu上用apt-get直接安装，也可以通过源码安装，在本组服务器上已经安装成功。
 
-此外，安装Dafny，它的github地址：(https://github.com/Microsoft/dafny)
+此外，安装Dafny，它的github地址：(https://github.com/Microsoft/dafny) ，它是基于mono的，首先需要安装mono
 
 还需要安装QEMU，因为环境不同，需要从源码开始安装。
+
+## How can the research be improved?
+其他文章中提到fsync的延迟很大，所以文中的工具在程序中插入fsync可能会造成一定的性能损失；文中对检查崩溃行为及重现崩溃后文件系统的镜像做了描述，在此基础上，可以尝试发展崩溃后自动恢复、修复的工具，完善文件系统在面临故障时的健壮性。
 
 ## If you write this paper, then how would you do?
 该文从文件系统面临的问题、测试方法、形式化验证表示和文件系统实例测试等几个方面对文件系统崩溃后行为的监视、复现进行了描述，同时在操作系统层面提出了几项支持应用程序利用文件系统崩溃后一致性行为进行优化的建议。更加侧重于形式化语言进行系统建模部分。
